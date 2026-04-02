@@ -136,6 +136,11 @@ export const useSessionStore = defineStore('session', () => {
     alwaysAllowedTools.clear()
   }
 
+  function clearDisplay() {
+    messages.value = []
+    toolCalls.value = []
+  }
+
   return {
     sessionId,
     model,
@@ -165,6 +170,7 @@ export const useSessionStore = defineStore('session', () => {
     resolvePermission,
     loadSessions,
     removeSession,
+    clearDisplay,
     reset,
   }
 })

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/sessionStore'
+import { useUiStore } from '@/stores/uiStore'
 import { computed } from 'vue'
 
 const store = useSessionStore()
+const uiStore = useUiStore()
 
 const statusColor = computed(() => {
   switch (store.connectionStatus) {
@@ -26,7 +28,14 @@ const formattedCost = computed(() => `$${store.cost.toFixed(4)}`)
         {{ store.connectionStatus }}
       </span>
       <span class="text-(--text-muted)">|</span>
-      <span>{{ store.model }}</span>
+      <!-- Clickable model name opens model selector (Ctrl+K) -->
+      <button
+        class="rounded px-1 transition hover:bg-(--bg-primary) hover:text-(--text-primary)"
+        :title="'Switch model (Ctrl+K)'"
+        @click="uiStore.modelSelectorOpen = true"
+      >
+        {{ store.model }}
+      </button>
     </div>
 
     <div class="flex items-center gap-3">

@@ -21,6 +21,35 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// ── Status / Models ──────────────────────────────────────────────────────────────────────────────
+const modelsCache: { data: ModelInfo[] | null; ts: number } = { data: null, ts: 0 }
+const CACHE_TTL = 60_000 // 1 min
+
+export interface ModelInfo {
+  id: string
+  provider: string
+  active?: boolean
+}
+
+export interface StatusResponse {
+  status: string
+  model: string
+  version: string
+  models: ModelInfo[]
+}
+
+export function getStatus(): Promise<StatusResponse> {
+  return apiFetch('/status')
+}
+
+export async function getModels(): Promise<ModelInfo[]> {
+  if (modelsCache.data && Date.now() - modelsCache.ts < CACHE_TTL) return modelsCache.data
+  const s = await getStatus()
+  modelsCache.data = s.models
+  modelsCache.ts = Date.now()
+  return s.models
+}
+
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
 export function getSessions(): Promise<SessionSummary[]> {

@@ -3,13 +3,16 @@ import { provide } from 'vue'
 import StatusBar from './StatusBar.vue'
 import PermissionModal from '@/components/chat/PermissionModal.vue'
 import SessionList from '@/components/sidebar/SessionList.vue'
+import ModelSelector from '@/components/composer/ModelSelector.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useStream } from '@/composables/useStream'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useUiStore } from '@/stores/uiStore'
 
 const ws = useWebSocket()
 const { handleEvent } = useStream()
 const store = useSessionStore()
+const uiStore = useUiStore()
 
 // Sync connection status
 ws.onEvent((event) => {
@@ -27,8 +30,11 @@ provide('ws', ws)
   <div class="flex h-full w-full flex-col bg-(--bg-primary)">
     <!-- Main area -->
     <div class="flex min-h-0 flex-1">
-      <!-- Sidebar -->
-      <aside class="flex w-56 flex-col border-r border-(--border) bg-(--bg-secondary)">
+      <!-- Sidebar (toggleable via Ctrl+B) -->
+      <aside
+        v-if="uiStore.sidebarOpen"
+        class="flex w-56 flex-col border-r border-(--border) bg-(--bg-secondary)"
+      >
         <SessionList />
       </aside>
 
@@ -47,5 +53,8 @@ provide('ws', ws)
       :key="req.id"
       :request="req"
     />
+
+    <!-- Model selector overlay (Ctrl+K) -->
+    <ModelSelector />
   </div>
 </template>

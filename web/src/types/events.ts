@@ -13,7 +13,7 @@ export type ServerEvent =
   | { type: 'connected'; session_id: string; model: string }
 
 export type ClientCommand =
-  | { type: 'send_message'; session_id: string; text: string }
+  | { type: 'send_message'; session_id: string; text: string; attachments?: { name: string; content: string }[] }
   | { type: 'cancel_turn'; session_id: string }
   | { type: 'approve_permission'; request_id: string }
   | { type: 'deny_permission'; request_id: string }

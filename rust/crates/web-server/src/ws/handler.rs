@@ -97,18 +97,28 @@ async fn handle_command(
     cmd: ClientCommand,
 ) {
     match cmd {
-        ClientCommand::SendMessage { text, .. } => {
+        ClientCommand::SendMessage { text, attachments, .. } => {
+            // Build full user content — append file attachments as XML context blocks
+            let full_text = if attachments.is_empty() {
+                text.clone()
+            } else {
+                let mut s = text.clone();
+                for att in &attachments {
+                    s.push_str(&format!("\n\n<file name=\"{}\">{}</file>", att.name, att.content));
+                }
+                s
+            };
+
             // Persist user message and auto-name session from first message
             if let Some(mut entry) = state.sessions.get_mut(session_id) {
                 if entry.messages.is_empty() {
-                    // Auto-name from first message (max 50 chars)
-                    let name = text.chars().take(50).collect::<String>();
+                    let name = full_text.chars().take(50).collect::<String>();
                     entry.name = name.trim().to_string();
                 }
                 entry.messages.push(StoredMessage {
                     id: Uuid::new_v4().to_string(),
                     role: "user".to_string(),
-                    content: text.clone(),
+                    content: full_text.clone(),
                     timestamp: unix_now(),
                 });
                 entry.updated_at = unix_now().to_string();
@@ -116,7 +126,7 @@ async fn handle_command(
 
             // Simulate a realistic turn with tool calls for frontend testing.
             // Phase 4+ will wire this to ConversationRuntime.
-            let response = simulate_turn(tx, &text).await;
+            let response = simulate_turn(tx, &full_text).await;
 
             // Persist assistant response
             if let Some(mut entry) = state.sessions.get_mut(session_id) {
