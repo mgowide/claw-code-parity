@@ -1,0 +1,36 @@
+/* ── Light theme ──────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --bg-input: #ffffff;
+
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #9198a1;
+
+  --border: #d0d7de;
+  --border-active: #0969da;
+
+  --accent: #0969da;
+  --accent-hover: #1a7fd4;
+
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --error: #d1242f;
+
+  --user-bubble: #dbeafe;
+  --assistant-bubble: #f6f8fa;
+
+  --diff-added-bg: rgba(26, 127, 55, 0.1);
+  --diff-removed-bg: rgba(209, 36, 47, 0.1);
+  --diff-added-text: #1a7f37;
+  --diff-removed-text: #d1242f;
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #d0d7de;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --radius: 8px;
+}

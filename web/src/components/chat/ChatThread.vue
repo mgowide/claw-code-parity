@@ -3,6 +3,7 @@ import { ref, nextTick, watch } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
 import MessageBubble from './MessageBubble.vue'
 import ToolCallCard from './ToolCallCard.vue'
+import ListTransition from '@/components/transitions/ListTransition.vue'
 
 const store = useSessionStore()
 const threadRef = ref<HTMLElement | null>(null)
@@ -35,7 +36,7 @@ watch(
     </div>
 
     <!-- Messages and Tool Calls -->
-    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+    <ListTransition tag="div" class="mx-auto flex max-w-3xl flex-col gap-4">
       <MessageBubble
         v-for="msg in store.messages"
         :key="msg.id"
@@ -50,6 +51,6 @@ watch(
         :key="tc.id"
         :tool-call="tc"
       />
-    </div>
+    </ListTransition>
   </div>
 </template>

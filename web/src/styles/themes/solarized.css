@@ -1,0 +1,36 @@
+/* ── Solarized dark theme ─────────────────────────────────────────── */
+[data-theme="solarized"] {
+  --bg-primary: #002b36;
+  --bg-secondary: #073642;
+  --bg-tertiary: #083f4d;
+  --bg-input: #002b36;
+
+  --text-primary: #839496;
+  --text-secondary: #657b83;
+  --text-muted: #4a5568;
+
+  --border: #0a4553;
+  --border-active: #268bd2;
+
+  --accent: #268bd2;
+  --accent-hover: #339ec0;
+
+  --success: #859900;
+  --warning: #b58900;
+  --error: #dc322f;
+
+  --user-bubble: #0a3a4a;
+  --assistant-bubble: #073642;
+
+  --diff-added-bg: rgba(133, 153, 0, 0.15);
+  --diff-removed-bg: rgba(220, 50, 47, 0.15);
+  --diff-added-text: #859900;
+  --diff-removed-text: #dc322f;
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #0a4553;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.7);
+  --radius: 8px;
+}

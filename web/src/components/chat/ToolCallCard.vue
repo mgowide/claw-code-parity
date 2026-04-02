@@ -74,7 +74,8 @@ const inputSummary = computed(() => {
       </span>
     </button>
 
-    <!-- Body — collapsible -->
+    <!-- Body — collapsible with expand animation -->
+    <Transition name="expand">
     <div v-if="expanded" class="border-t border-(--border) p-3">
       <!-- Input params -->
       <details class="mb-2">
@@ -123,5 +124,6 @@ const inputSummary = computed(() => {
         <pre class="whitespace-pre-wrap">{{ toolCall.output }}</pre>
       </div>
     </div>
+    </Transition>
   </div>
 </template>

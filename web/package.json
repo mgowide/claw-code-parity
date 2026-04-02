@@ -9,13 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/three": "^0.183.1",
     "@vueuse/core": "^14.2.1",
+    "@vueuse/motion": "^3.0.3",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "chart.js": "^4.5.1",
     "highlight.js": "^11.11.1",
     "naive-ui": "^2.44.1",
     "pinia": "^3.0.4",
+    "three": "^0.183.2",
     "v-code-diff": "^1.13.1",
     "vue": "^3.5.30",
     "vue-chartjs": "^5.3.3",

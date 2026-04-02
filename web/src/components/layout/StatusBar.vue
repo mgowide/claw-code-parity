@@ -2,6 +2,7 @@
 import { useSessionStore } from '@/stores/sessionStore'
 import { useUiStore } from '@/stores/uiStore'
 import { computed } from 'vue'
+import ThemePicker from './ThemePicker.vue'
 
 const store = useSessionStore()
 const uiStore = useUiStore()
@@ -39,6 +40,8 @@ const formattedCost = computed(() => `$${store.cost.toFixed(4)}`)
     </div>
 
     <div class="flex items-center gap-3">
+      <ThemePicker />
+      <span class="text-(--text-muted)">|</span>
       <span>in: {{ store.inputTokens.toLocaleString() }}</span>
       <span>out: {{ store.outputTokens.toLocaleString() }}</span>
       <span v-if="store.cacheHits > 0">cache: {{ store.cacheHits.toLocaleString() }}</span>

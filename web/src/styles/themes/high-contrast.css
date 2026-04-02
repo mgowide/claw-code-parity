@@ -1,0 +1,36 @@
+/* ── High-contrast theme ──────────────────────────────────────────── */
+[data-theme="high-contrast"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #111111;
+  --bg-input: #000000;
+
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+
+  --border: #ffffff;
+  --border-active: #00ffff;
+
+  --accent: #00ffff;
+  --accent-hover: #66ffff;
+
+  --success: #00ff00;
+  --warning: #ffff00;
+  --error: #ff0000;
+
+  --user-bubble: #001a33;
+  --assistant-bubble: #0a0a0a;
+
+  --diff-added-bg: rgba(0, 255, 0, 0.15);
+  --diff-removed-bg: rgba(255, 0, 0, 0.15);
+  --diff-added-text: #00ff00;
+  --diff-removed-text: #ff0000;
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #555555;
+
+  --shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  --shadow-lg: 0 8px 32px rgba(255, 255, 255, 0.15);
+  --radius: 4px;
+}

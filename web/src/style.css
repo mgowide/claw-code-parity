@@ -1,23 +1,40 @@
 ﻿@import "tailwindcss";
+@import "./styles/themes/dark.css";
+@import "./styles/themes/light.css";
+@import "./styles/themes/solarized.css";
+@import "./styles/themes/high-contrast.css";
 
-:root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
-  --accent: #58a6ff;
-  --accent-hover: #79c0ff;
-  --border: #30363d;
-  --user-bubble: #1f6feb;
-  --assistant-bubble: #21262d;
-  --success: #3fb950;
-  --warning: #d29922;
-  --error: #f85149;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-}
+/* ── Page transition ─────────────────────────────────────────────── */
+.page-enter-from { opacity: 0; transform: translateX(10px); }
+.page-enter-active { transition: opacity 0.2s ease-out, transform 0.2s ease-out; }
+.page-leave-active { transition: opacity 0.15s ease-in; }
+.page-leave-to { opacity: 0; }
 
+/* ── Message slide-in ────────────────────────────────────────────── */
+.message-enter-from { opacity: 0; transform: translateY(16px); }
+.message-enter-active { transition: opacity 0.25s ease-out, transform 0.25s ease-out; }
+.message-leave-active { transition: opacity 0.15s ease-in; }
+.message-leave-to { opacity: 0; transform: translateX(-16px); }
+
+/* ── Tool card expand ────────────────────────────────────────────── */
+.expand-enter-from,
+.expand-leave-to { max-height: 0; opacity: 0; }
+.expand-enter-active,
+.expand-leave-active { transition: max-height 0.3s ease, opacity 0.2s ease; overflow: hidden; }
+.expand-enter-to { max-height: 1200px; opacity: 1; }
+
+/* ── Fade ────────────────────────────────────────────────────────── */
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+
+/* ── Slide-up modal ──────────────────────────────────────────────── */
+.slide-up-enter-from { opacity: 0; transform: translateY(20px) scale(0.97); }
+.slide-up-enter-active { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.slide-up-leave-active { transition: all 0.15s ease-in; }
+.slide-up-leave-to { opacity: 0; transform: translateY(10px) scale(0.98); }
+
+
+/* ── Base reset ──────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
   margin: 0;

@@ -1,5 +1,6 @@
 import { ref, onUnmounted } from 'vue'
 import type { ClientCommand, ServerEvent } from '@/types/events'
+import { useToastStore } from '@/stores/toastStore'
 
 type EventHandler = (event: ServerEvent) => void
 
@@ -10,6 +11,14 @@ export function useWebSocket() {
   let reconnectDelay = 1000
   const maxReconnectDelay = 30000
   const handlers: EventHandler[] = []
+  let toast: ReturnType<typeof useToastStore> | null = null
+
+  function getToast() {
+    if (!toast) {
+      try { toast = useToastStore() } catch { /* pinia not ready yet */ }
+    }
+    return toast
+  }
 
   function connect() {
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
@@ -24,11 +33,15 @@ export function useWebSocket() {
     ws.onopen = () => {
       status.value = 'connected'
       reconnectDelay = 1000
+      if (reconnectTimer) getToast()?.success('Reconnected to server')
     }
 
     ws.onmessage = (e) => {
       try {
         const event: ServerEvent = JSON.parse(e.data)
+        // Surface error events as toasts
+        if (event.type === 'error') getToast()?.error(event.message)
+        if (event.type === 'session_compacted') getToast()?.info('Session context was compacted')
         for (const handler of handlers) {
           handler(event)
         }
@@ -39,6 +52,7 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       status.value = 'disconnected'
+      getToast()?.warning('Disconnected — reconnecting…')
       scheduleReconnect()
     }
 
