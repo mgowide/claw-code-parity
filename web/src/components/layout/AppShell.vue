@@ -2,6 +2,7 @@
 import { provide } from 'vue'
 import StatusBar from './StatusBar.vue'
 import PermissionModal from '@/components/chat/PermissionModal.vue'
+import SessionList from '@/components/sidebar/SessionList.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useStream } from '@/composables/useStream'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -26,20 +27,9 @@ provide('ws', ws)
   <div class="flex h-full w-full flex-col bg-(--bg-primary)">
     <!-- Main area -->
     <div class="flex min-h-0 flex-1">
-      <!-- Sidebar stub -->
+      <!-- Sidebar -->
       <aside class="flex w-56 flex-col border-r border-(--border) bg-(--bg-secondary)">
-        <div class="flex items-center gap-2 border-b border-(--border) px-4 py-3">
-          <div class="h-6 w-6 rounded-md bg-(--accent)" />
-          <span class="text-sm font-semibold text-(--text-primary)">Claw</span>
-        </div>
-        <div class="p-3">
-          <button
-            class="w-full rounded-md border border-(--border) px-3 py-1.5 text-xs text-(--text-secondary) transition hover:border-(--accent) hover:text-(--text-primary)"
-            @click="store.reset()"
-          >
-            + New Chat
-          </button>
-        </div>
+        <SessionList />
       </aside>
 
       <!-- Router view -->

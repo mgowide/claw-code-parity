@@ -46,3 +46,26 @@ export interface PermissionRequest {
   tool: string
   description: string
 }
+
+export interface SessionSummary {
+  id: string
+  name: string
+  model: string
+  created_at: string
+  updated_at: string
+  message_count: number
+  input_tokens: number
+  output_tokens: number
+  cost: number
+}
+
+export interface StoredMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: number
+}
+
+export interface SessionDetail extends SessionSummary {
+  messages: StoredMessage[]
+}

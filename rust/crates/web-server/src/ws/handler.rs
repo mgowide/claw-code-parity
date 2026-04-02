@@ -8,7 +8,7 @@ use futures::SinkExt;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::state::{AppState, SessionHandle};
+use crate::state::{AppState, SessionHandle, SessionUsage, StoredMessage};
 use crate::ws::commands::ClientCommand;
 use crate::ws::events::ServerEvent;
 
@@ -23,15 +23,20 @@ pub async fn ws_upgrade(
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
     let (mut sender, mut receiver) = socket.split();
 
-    // Create a default session for this connection
+    // Create a session for this connection
     let session_id = Uuid::new_v4().to_string();
     let model = state.model.clone();
     let (tx, mut rx) = broadcast::channel::<ServerEvent>(256);
+    let now = unix_now();
 
     let handle = SessionHandle {
         session_id: session_id.clone(),
+        name: "New chat".to_string(),
         model: model.clone(),
-        created_at: String::new(),
+        created_at: now.to_string(),
+        updated_at: now.to_string(),
+        messages: Vec::new(),
+        usage: SessionUsage::default(),
         tx: tx.clone(),
     };
     state.sessions.insert(session_id.clone(), handle);
@@ -77,35 +82,71 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
         }
     }
 
-    // Clean up
-    write_task.abort();
-    state.sessions.remove(&session_id);
-    tracing::info!("client disconnected, session {session_id} removed");
+    // Clean up: keep session in memory so it appears in the list,
+    // but drop the broadcast sender so old subscribers notice it's gone.
+    if let Some(mut entry) = state.sessions.get_mut(&session_id) {
+        entry.updated_at = unix_now().to_string();
+    }
+    tracing::info!("client disconnected, session {session_id} retained in list");
 }
 
 async fn handle_command(
-    _state: &Arc<AppState>,
+    state: &Arc<AppState>,
     tx: &broadcast::Sender<ServerEvent>,
     session_id: &str,
     cmd: ClientCommand,
 ) {
     match cmd {
         ClientCommand::SendMessage { text, .. } => {
+            // Persist user message and auto-name session from first message
+            if let Some(mut entry) = state.sessions.get_mut(session_id) {
+                if entry.messages.is_empty() {
+                    // Auto-name from first message (max 50 chars)
+                    let name = text.chars().take(50).collect::<String>();
+                    entry.name = name.trim().to_string();
+                }
+                entry.messages.push(StoredMessage {
+                    id: Uuid::new_v4().to_string(),
+                    role: "user".to_string(),
+                    content: text.clone(),
+                    timestamp: unix_now(),
+                });
+                entry.updated_at = unix_now().to_string();
+            }
+
             // Simulate a realistic turn with tool calls for frontend testing.
-            // Phase 3+ will wire this to ConversationRuntime.
-            simulate_turn(tx, &text).await;
+            // Phase 4+ will wire this to ConversationRuntime.
+            let response = simulate_turn(tx, &text).await;
+
+            // Persist assistant response
+            if let Some(mut entry) = state.sessions.get_mut(session_id) {
+                entry.messages.push(StoredMessage {
+                    id: Uuid::new_v4().to_string(),
+                    role: "assistant".to_string(),
+                    content: response,
+                    timestamp: unix_now(),
+                });
+                // Accumulate usage
+                entry.usage.input_tokens += 1250;
+                entry.usage.output_tokens += 340;
+                entry.usage.cache_hits += 800;
+                entry.usage.cost += 0.0042;
+                entry.updated_at = unix_now().to_string();
+            }
         }
         ClientCommand::CancelTurn { .. } => {
             let _ = tx.send(ServerEvent::TurnComplete { turn_index: 0 });
         }
         ClientCommand::SwitchModel { model } => {
+            if let Some(mut entry) = state.sessions.get_mut(session_id) {
+                entry.model = model.clone();
+            }
             let _ = tx.send(ServerEvent::Connected {
                 session_id: session_id.to_string(),
                 model,
             });
         }
         ClientCommand::ApprovePermission { request_id } => {
-            // Simulate completing a tool after approval
             let _ = tx.send(ServerEvent::ToolResult {
                 id: request_id,
                 output: "Permission granted — operation completed.".to_string(),
@@ -133,6 +174,7 @@ async fn handle_command(
 }
 
 /// Simulates a multi-step assistant turn with tool calls.
+/// Returns the primary text response for transcript storage.
 ///
 /// Depending on the user message, different tool scenarios are demonstrated:
 /// - Messages containing "edit" or "write" → file edit with diff
@@ -140,7 +182,7 @@ async fn handle_command(
 /// - Messages containing "read" or "search" → read_file tool with code output
 /// - Messages containing "permission" or "danger" → permission request flow
 /// - Default → thinking + text response with a read_file tool call
-async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
+async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) -> String {
     let lower = text.to_lowercase();
 
     // Start with thinking
@@ -148,8 +190,9 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     let _ = tx.send(ServerEvent::ThinkingEnd {});
 
+    let response_text;
+
     if lower.contains("edit") || lower.contains("write") {
-        // Simulate file edit with diff
         let tool_id = Uuid::new_v4().to_string();
         let _ = tx.send(ServerEvent::ToolUseStart {
             id: tool_id.clone(),
@@ -161,24 +204,18 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
             }),
         });
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
         let _ = tx.send(ServerEvent::Diff {
             path: "src/main.rs".to_string(),
             old_content: "fn main() {\n    println!(\"Hello\");\n}".to_string(),
             new_content: "fn main() {\n    println!(\"Hello, world!\");\n}".to_string(),
         });
-
         let _ = tx.send(ServerEvent::ToolResult {
             id: tool_id,
             output: "File edited successfully.".to_string(),
             is_error: false,
         });
-
-        let _ = tx.send(ServerEvent::TextDelta {
-            text: "I've updated `src/main.rs` to print \"Hello, world!\" instead of \"Hello\".".to_string(),
-        });
+        response_text = "I've updated `src/main.rs` to print \"Hello, world!\" instead of \"Hello\".".to_string();
     } else if lower.contains("run") || lower.contains("bash") {
-        // Simulate bash tool with terminal output
         let tool_id = Uuid::new_v4().to_string();
         let _ = tx.send(ServerEvent::ToolUseStart {
             id: tool_id.clone(),
@@ -186,18 +223,13 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
             input: serde_json::json!({ "command": "cargo test --workspace" }),
         });
         tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-
         let _ = tx.send(ServerEvent::ToolResult {
             id: tool_id,
-            output: "\x1b[32mCompiling\x1b[0m claw v0.1.0\n\x1b[32m  Running\x1b[0m unittests src/main.rs\n\nrunning 3 tests\ntest tests::test_parse ... \x1b[32mok\x1b[0m\ntest tests::test_format ... \x1b[32mok\x1b[0m\ntest tests::test_validate ... \x1b[32mok\x1b[0m\n\ntest result: \x1b[32mok\x1b[0m. 3 passed; 0 failed\n".to_string(),
+            output: "\x1b[32mCompiling\x1b[0m claw v0.1.0\n\ntest result: \x1b[32mok\x1b[0m. 3 passed; 0 failed\n".to_string(),
             is_error: false,
         });
-
-        let _ = tx.send(ServerEvent::TextDelta {
-            text: "All 3 tests passed successfully.".to_string(),
-        });
+        response_text = "All 3 tests passed successfully.".to_string();
     } else if lower.contains("read") || lower.contains("search") {
-        // Simulate read_file tool with code
         let tool_id = Uuid::new_v4().to_string();
         let _ = tx.send(ServerEvent::ToolUseStart {
             id: tool_id.clone(),
@@ -205,33 +237,24 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
             input: serde_json::json!({ "path": "src/lib.rs", "start_line": 1, "end_line": 20 }),
         });
         tokio::time::sleep(std::time::Duration::from_millis(150)).await;
-
         let _ = tx.send(ServerEvent::ToolResult {
             id: tool_id,
-            output: "use std::collections::HashMap;\nuse serde::{Deserialize, Serialize};\n\n/// Core configuration for the application.\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct Config {\n    pub model: String,\n    pub max_tokens: u64,\n    pub temperature: f64,\n    pub tools: Vec<String>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            model: \"claude-sonnet-4-20250514\".to_string(),\n            max_tokens: 8192,\n            temperature: 0.7,\n            tools: vec![],\n        }\n    }\n}".to_string(),
+            output: "pub struct Config {\n    pub model: String,\n    pub max_tokens: u64,\n}".to_string(),
             is_error: false,
         });
-
-        let _ = tx.send(ServerEvent::TextDelta {
-            text: "Here's the content of `src/lib.rs`. It defines a `Config` struct with model, token, and temperature settings.".to_string(),
-        });
+        response_text = "Here's the content of `src/lib.rs`. It defines a `Config` struct with model and token settings.".to_string();
     } else if lower.contains("permission") || lower.contains("danger") {
-        // Simulate a permission request
         let perm_id = Uuid::new_v4().to_string();
-        let _ = tx.send(ServerEvent::TextDelta {
-            text: "I need to run a destructive command. Requesting permission...".to_string(),
-        });
-
+        let intro = "I need to run a destructive command. Requesting permission...".to_string();
+        let _ = tx.send(ServerEvent::TextDelta { text: intro.clone() });
         let _ = tx.send(ServerEvent::PermissionRequest {
-            id: perm_id.clone(),
+            id: perm_id,
             tool: "bash".to_string(),
             description: "Execute: rm -rf target/ && cargo build --release".to_string(),
         });
-
-        // The turn doesn't complete here — it waits for ApprovePermission/DenyPermission
-        return;
+        // Turn remains open — waiting for approve/deny
+        return intro;
     } else {
-        // Default: simple tool call + text response
         let tool_id = Uuid::new_v4().to_string();
         let _ = tx.send(ServerEvent::ToolUseStart {
             id: tool_id.clone(),
@@ -239,19 +262,15 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
             input: serde_json::json!({ "path": "Cargo.toml" }),
         });
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-
         let _ = tx.send(ServerEvent::ToolResult {
             id: tool_id,
             output: "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"2\"\n".to_string(),
             is_error: false,
         });
-
-        let _ = tx.send(ServerEvent::TextDelta {
-            text: format!("I received your message: \"{text}\". This is a simulated response with a tool call demonstration."),
-        });
+        response_text = format!("I received your message: \"{text}\". This is a simulated response with a tool call demonstration.");
     }
 
-    // Usage and turn complete
+    let _ = tx.send(ServerEvent::TextDelta { text: response_text.clone() });
     let _ = tx.send(ServerEvent::Usage {
         input_tokens: 1250,
         output_tokens: 340,
@@ -259,4 +278,13 @@ async fn simulate_turn(tx: &broadcast::Sender<ServerEvent>, text: &str) {
         cost: 0.0042,
     });
     let _ = tx.send(ServerEvent::TurnComplete { turn_index: 0 });
+
+    response_text
+}
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }

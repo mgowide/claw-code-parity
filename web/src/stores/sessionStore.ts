@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
-import type { Message, ToolCall, PermissionRequest } from '@/types/events'
+import type { Message, ToolCall, PermissionRequest, SessionSummary } from '@/types/events'
+import { getSessions, deleteSession as apiDeleteSession } from '@/lib/api'
 
 export const useSessionStore = defineStore('session', () => {
   const sessionId = ref<string | null>(null)
@@ -16,6 +17,32 @@ export const useSessionStore = defineStore('session', () => {
   const toolCalls = ref<ToolCall[]>([])
   const pendingPermissions = ref<PermissionRequest[]>([])
   const alwaysAllowedTools = reactive(new Set<string>())
+
+  // ── Session list (Phase 3) ──────────────────────────────────────────────────
+  const sessions = ref<SessionSummary[]>([])
+  const sessionsLoading = ref(false)
+  const sessionsError = ref<string | null>(null)
+
+  async function loadSessions(): Promise<void> {
+    sessionsLoading.value = true
+    sessionsError.value = null
+    try {
+      sessions.value = await getSessions()
+    } catch (err) {
+      sessionsError.value = err instanceof Error ? err.message : 'Failed to load sessions'
+    } finally {
+      sessionsLoading.value = false
+    }
+  }
+
+  async function removeSession(id: string): Promise<void> {
+    await apiDeleteSession(id)
+    sessions.value = sessions.value.filter((s) => s.id !== id)
+    // If the active session was deleted, reset the chat view
+    if (sessionId.value === id) {
+      reset()
+    }
+  }
 
   function addUserMessage(text: string) {
     messages.value.push({
@@ -123,6 +150,10 @@ export const useSessionStore = defineStore('session', () => {
     toolCalls,
     pendingPermissions,
     alwaysAllowedTools,
+    // Phase 3
+    sessions,
+    sessionsLoading,
+    sessionsError,
     addUserMessage,
     appendDelta,
     completeMessage,
@@ -132,6 +163,8 @@ export const useSessionStore = defineStore('session', () => {
     attachDiff,
     addPermissionRequest,
     resolvePermission,
+    loadSessions,
+    removeSession,
     reset,
   }
 })
