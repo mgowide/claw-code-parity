@@ -40,6 +40,30 @@ pub struct SessionHandle {
 pub struct AppState {
     pub sessions: DashMap<String, SessionHandle>,
     pub model: String,
+    /// Root directory the server was started from; used to constrain file API.
+    pub workspace_root: std::path::PathBuf,
+    /// In-memory MCP server registry.
+    pub mcp_servers: DashMap<String, McpServerEntry>,
+}
+
+/// An MCP server registered via the API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServerEntry {
+    pub id: String,
+    pub name: String,
+    pub transport: String,
+    pub command: Option<String>,
+    pub url: Option<String>,
+    pub status: String, // "connected" | "disconnected" | "error"
+    pub error: Option<String>,
+    pub tools: Vec<McpTool>,
+    pub connected_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpTool {
+    pub name: String,
+    pub description: String,
 }
 
 impl AppState {
@@ -47,10 +71,13 @@ impl AppState {
     pub fn new() -> Arc<Self> {
         let model = std::env::var("ANTHROPIC_MODEL")
             .unwrap_or_else(|_| "claude-sonnet-4-20250514".to_string());
+        let workspace_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
 
         Arc::new(Self {
             sessions: DashMap::new(),
             model,
+            workspace_root,
+            mcp_servers: DashMap::new(),
         })
     }
 }

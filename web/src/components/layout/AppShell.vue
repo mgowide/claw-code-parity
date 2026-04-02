@@ -4,6 +4,7 @@ import StatusBar from './StatusBar.vue'
 import PermissionModal from '@/components/chat/PermissionModal.vue'
 import SessionList from '@/components/sidebar/SessionList.vue'
 import ModelSelector from '@/components/composer/ModelSelector.vue'
+import RightPanel from '@/components/panels/RightPanel.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useStream } from '@/composables/useStream'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -42,6 +43,9 @@ provide('ws', ws)
       <main class="flex min-w-0 flex-1 flex-col">
         <router-view />
       </main>
+
+      <!-- Right panel (Ctrl+Shift+R) -->
+      <RightPanel v-if="uiStore.rightPanelOpen" />
     </div>
 
     <!-- Status bar -->

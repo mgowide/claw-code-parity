@@ -12,6 +12,14 @@ const ws = inject<ReturnType<typeof useWebSocket>>('ws')!
 
 const query = ref('')
 
+const navLinks = [
+  { to: '/files', icon: '📁', label: 'Files' },
+  { to: '/tools', icon: '🔧', label: 'Tools' },
+  { to: '/settings', icon: '⚙️', label: 'Settings' },
+  { to: '/cost', icon: '💰', label: 'Cost' },
+  { to: '/mcp', icon: '🔌', label: 'MCP Servers' },
+]
+
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   // Show the 10 most recent sessions, filtered by search
@@ -101,5 +109,19 @@ onMounted(() => {
         View all sessions →
       </router-link>
     </div>
+
+    <!-- Navigation links -->
+    <nav class="border-t border-(--border) px-2 py-2">
+      <router-link
+        v-for="link in navLinks"
+        :key="link.to"
+        :to="link.to"
+        class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-(--text-muted) transition hover:bg-(--bg-primary) hover:text-(--text-primary)"
+        active-class="bg-(--bg-primary) text-(--text-primary)"
+      >
+        <span class="w-3.5 text-center">{{ link.icon }}</span>
+        {{ link.label }}
+      </router-link>
+    </nav>
   </div>
 </template>

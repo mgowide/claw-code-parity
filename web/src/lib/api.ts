@@ -75,6 +75,99 @@ export function deleteSession(id: string): Promise<void> {
  * Triggers a file download for the session export.
  * format: 'md' (Markdown) | 'json' (raw JSON)
  */
+// ── Files ─────────────────────────────────────────────────────────────────────
+
+export interface FileEntry {
+  name: string
+  path: string
+  kind: 'file' | 'dir'
+  size?: number
+  lang?: string
+}
+
+export interface FileListResponse {
+  path: string
+  entries: FileEntry[]
+}
+
+export function getFiles(path = '.'): Promise<FileListResponse> {
+  return apiFetch(`/files?path=${encodeURIComponent(path)}`)
+}
+
+export interface FileReadResponse {
+  path: string
+  content: string
+  lang: string
+  total_lines: number
+  start_line: number
+  end_line: number
+}
+
+export function readFile(path: string, start?: number, end?: number): Promise<FileReadResponse> {
+  const params = new URLSearchParams({ path })
+  if (start !== undefined) params.set('start', String(start))
+  if (end !== undefined) params.set('end', String(end))
+  return apiFetch(`/files/read?${params}`)
+}
+
+// ── Config ───────────────────────────────────────────────────────────────────
+
+export function getConfig(): Promise<Record<string, unknown>> {
+  return apiFetch('/config')
+}
+
+export function putConfig(config: Record<string, unknown>): Promise<{ ok: boolean }> {
+  return apiFetch('/config', { method: 'PUT', body: JSON.stringify(config) })
+}
+
+// ── Tools ─────────────────────────────────────────────────────────────────────
+
+export interface ToolEntry {
+  name: string
+  description: string
+  permission: string
+  source: string
+  call_count: number
+  enabled: boolean
+}
+
+export function getTools(): Promise<ToolEntry[]> {
+  return apiFetch('/tools')
+}
+
+// ── MCP Servers ───────────────────────────────────────────────────────────────
+
+export interface McpServer {
+  id: string
+  name: string
+  transport: 'stdio' | 'sse'
+  command?: string
+  url?: string
+  status: 'connected' | 'connecting' | 'error' | 'disconnected'
+  error?: string
+  tools: Array<{ name: string; description: string }>
+  connected_at?: number
+}
+
+export function getMcpServers(): Promise<McpServer[]> {
+  return apiFetch('/mcp/servers')
+}
+
+export function addMcpServer(body: {
+  name: string
+  transport: 'stdio' | 'sse'
+  command?: string
+  url?: string
+}): Promise<McpServer> {
+  return apiFetch('/mcp/servers', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function removeMcpServer(id: string): Promise<void> {
+  return apiFetch(`/mcp/servers/${id}`, { method: 'DELETE' })
+}
+
+// ── Sessions ─────────────────────────────────────────────────────────────────
+
 export async function exportSession(id: string, format: 'md' | 'json' = 'md'): Promise<void> {
   const res = await fetch(`${BASE}/sessions/${id}/export?format=${format}`)
   if (!res.ok) throw new Error(`Export failed: ${res.statusText}`)

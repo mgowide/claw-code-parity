@@ -72,4 +72,12 @@ export function useKeyboardShortcuts() {
       store.clearDisplay()
     }
   })
+
+  // Ctrl+Shift+R — toggle right panel
+  onKeyStroke('r', (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.shiftKey && !e.altKey) {
+      e.preventDefault()
+      uiStore.rightPanelOpen = !uiStore.rightPanelOpen
+    }
+  })
 }

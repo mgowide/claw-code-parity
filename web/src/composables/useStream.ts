@@ -1,5 +1,6 @@
 import type { ServerEvent } from '@/types/events'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useTodoStore } from '@/stores/todoStore'
 
 /**
  * Processes incoming ServerEvent messages and mutates the session store accordingly.
@@ -47,14 +48,28 @@ export function useStream() {
           startTime: Date.now(),
         })
         break
-      case 'tool_result':
+      case 'tool_result': {
         store.resolveToolCall(event.id, {
           output: event.output,
           isError: event.is_error,
           status: event.is_error ? 'error' : 'success',
           endTime: Date.now(),
         })
+        // Parse TodoWrite tool output to update the todo store
+        {
+          const todoStore = useTodoStore()
+          const call = store.toolCalls.find((t) => t.id === event.id)
+          if (call?.name === 'todo_write' && !event.is_error && event.output) {
+            try {
+              const parsed = JSON.parse(String(event.output))
+              if (Array.isArray(parsed?.todos)) todoStore.setTodos(parsed.todos)
+            } catch {
+              // non-JSON output — ignore
+            }
+          }
+        }
         break
+      }
       case 'diff':
         // Attach diff to the most recent running tool call
         {

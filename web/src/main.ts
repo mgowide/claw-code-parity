@@ -9,6 +9,11 @@ const router = createRouter({
   routes: [
     { path: '/', component: () => import('./views/ChatView.vue') },
     { path: '/sessions', component: () => import('./views/SessionsView.vue') },
+    { path: '/files', component: () => import('./views/FilesView.vue') },
+    { path: '/tools', component: () => import('./views/ToolsView.vue') },
+    { path: '/settings', component: () => import('./views/SettingsView.vue') },
+    { path: '/cost', component: () => import('./views/CostView.vue') },
+    { path: '/mcp', component: () => import('./views/MCPView.vue') },
   ],
 })
 
