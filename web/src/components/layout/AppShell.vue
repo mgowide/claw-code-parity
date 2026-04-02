@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { provide } from 'vue'
 import StatusBar from './StatusBar.vue'
+import PermissionModal from '@/components/chat/PermissionModal.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useStream } from '@/composables/useStream'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -49,5 +50,12 @@ provide('ws', ws)
 
     <!-- Status bar -->
     <StatusBar />
+
+    <!-- Permission modals -->
+    <PermissionModal
+      v-for="req in store.pendingPermissions"
+      :key="req.id"
+      :request="req"
+    />
   </div>
 </template>

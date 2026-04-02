@@ -2,13 +2,14 @@
 import { ref, nextTick, watch } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
 import MessageBubble from './MessageBubble.vue'
+import ToolCallCard from './ToolCallCard.vue'
 
 const store = useSessionStore()
 const threadRef = ref<HTMLElement | null>(null)
 
-// Auto-scroll to bottom when messages change
+// Auto-scroll to bottom when messages or tool calls change
 watch(
-  () => store.messages.length + (store.messages.at(-1)?.content.length ?? 0),
+  () => store.messages.length + (store.messages.at(-1)?.content.length ?? 0) + store.toolCalls.length,
   async () => {
     await nextTick()
     if (threadRef.value) {
@@ -41,6 +42,13 @@ watch(
         :role="msg.role"
         :content="msg.content"
         :is-streaming="msg.isStreaming"
+      />
+
+      <!-- Tool call cards -->
+      <ToolCallCard
+        v-for="tc in store.toolCalls"
+        :key="tc.id"
+        :tool-call="tc"
       />
     </div>
   </div>

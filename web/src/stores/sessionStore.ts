@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { Message } from '@/types/events'
+import { ref, reactive } from 'vue'
+import type { Message, ToolCall, PermissionRequest } from '@/types/events'
 
 export const useSessionStore = defineStore('session', () => {
   const sessionId = ref<string | null>(null)
@@ -13,6 +13,9 @@ export const useSessionStore = defineStore('session', () => {
   const cacheHits = ref(0)
   const cost = ref(0)
   const connectionStatus = ref<'connected' | 'connecting' | 'disconnected'>('disconnected')
+  const toolCalls = ref<ToolCall[]>([])
+  const pendingPermissions = ref<PermissionRequest[]>([])
+  const alwaysAllowedTools = reactive(new Set<string>())
 
   function addUserMessage(text: string) {
     messages.value.push({
@@ -60,6 +63,38 @@ export const useSessionStore = defineStore('session', () => {
     cost.value += tokens.cost
   }
 
+  function addToolCall(tc: Omit<ToolCall, 'output' | 'isError' | 'endTime' | 'diff'>) {
+    toolCalls.value.push({ ...tc })
+  }
+
+  function resolveToolCall(id: string, result: { output: string; isError: boolean; status: 'success' | 'error'; endTime: number }) {
+    const tc = toolCalls.value.find((t) => t.id === id)
+    if (tc) {
+      tc.output = result.output
+      tc.isError = result.isError
+      tc.status = result.status
+      tc.endTime = result.endTime
+    }
+  }
+
+  function attachDiff(toolId: string, diff: { path: string; oldContent: string; newContent: string }) {
+    // Attach diff to the most recent tool call matching the path, or the last running one
+    const tc = toolCalls.value.find((t) => t.id === toolId) ?? toolCalls.value.findLast((t) => t.status === 'running')
+    if (tc) {
+      tc.diff = diff
+    }
+  }
+
+  function addPermissionRequest(req: PermissionRequest) {
+    // If the tool is already always-allowed, don't show the modal
+    if (alwaysAllowedTools.has(req.tool)) return
+    pendingPermissions.value.push(req)
+  }
+
+  function resolvePermission(requestId: string) {
+    pendingPermissions.value = pendingPermissions.value.filter((p) => p.id !== requestId)
+  }
+
   function reset() {
     sessionId.value = null
     messages.value = []
@@ -69,6 +104,9 @@ export const useSessionStore = defineStore('session', () => {
     outputTokens.value = 0
     cacheHits.value = 0
     cost.value = 0
+    toolCalls.value = []
+    pendingPermissions.value = []
+    alwaysAllowedTools.clear()
   }
 
   return {
@@ -82,10 +120,18 @@ export const useSessionStore = defineStore('session', () => {
     cacheHits,
     cost,
     connectionStatus,
+    toolCalls,
+    pendingPermissions,
+    alwaysAllowedTools,
     addUserMessage,
     appendDelta,
     completeMessage,
     updateUsage,
+    addToolCall,
+    resolveToolCall,
+    attachDiff,
+    addPermissionRequest,
+    resolvePermission,
     reset,
   }
 })

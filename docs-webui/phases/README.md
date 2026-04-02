@@ -47,13 +47,13 @@ Phase 1 is the foundation. Phases 2, 3, and 4 can partially overlap after Phase 
 - [x] User can type, send, and see streaming AI response
 - [x] Status bar shows model and connection state
 
-### Phase 2 — Tool Visualization
-- [ ] Tool calls appear as collapsible cards with spinner → result
-- [ ] `edit_file` shows colored inline diff
-- [ ] Code blocks have syntax highlighting + copy button
-- [ ] `bash` output renders in xterm.js with ANSI colors
-- [ ] Permission requests show as modals with risk badges
-- [ ] All tool events (start/result/diff/permission) flow through WebSocket
+### Phase 2 — Tool Visualization ✅
+- [x] Tool calls appear as collapsible cards with spinner → result
+- [x] `edit_file` shows colored inline diff
+- [x] Code blocks have syntax highlighting + copy button
+- [x] `bash` output renders in xterm.js with ANSI colors
+- [x] Permission requests show as modals with risk badges
+- [x] All tool events (start/result/diff/permission) flow through WebSocket
 
 ### Phase 3 — Session Management
 - [ ] Session list in sidebar shows all past sessions

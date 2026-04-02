@@ -28,3 +28,21 @@ export interface Message {
   isStreaming: boolean
   timestamp: number
 }
+
+export interface ToolCall {
+  id: string
+  name: string
+  input: Record<string, unknown>
+  output?: string
+  isError?: boolean
+  status: 'running' | 'success' | 'error'
+  startTime: number
+  endTime?: number
+  diff?: { path: string; oldContent: string; newContent: string }
+}
+
+export interface PermissionRequest {
+  id: string
+  tool: string
+  description: string
+}
